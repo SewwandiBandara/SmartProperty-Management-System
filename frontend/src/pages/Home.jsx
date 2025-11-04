@@ -40,7 +40,7 @@ const Home = () => {
 
   const testimonials = [
     {
-      name: "Sarah Johnson",
+      name: "Prakash Athapaththu",
       role: "Property Manager",
       company: "Urban Living Properties",
       content: "This system reduced our administrative work by 70% and improved tenant communication significantly.",
@@ -54,7 +54,7 @@ const Home = () => {
       avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80"
     },
     {
-      name: "Emily Rodriguez",
+      name: "Ranga Senadheera",
       role: "Landlord",
       company: "Private Properties",
       content: "From rent collection to maintenance, everything is streamlined. My tenants love the convenience.",
@@ -305,14 +305,14 @@ const Home = () => {
               <h3 className="font-semibold mb-4">Company</h3>
               <ul className="space-y-2 text-gray-400">
                 <li><a href="/about" className="hover:text-white transition duration-300">About</a></li>
-                <li><a href="#" className="hover:text-white transition duration-300">Blog</a></li>
-                <li><a href="#" className="hover:text-white transition duration-300">Careers</a></li>
+                <li><a href="/blog" className="hover:text-white transition duration-300">Blog</a></li>
+                <li><a href="/careers" className="hover:text-white transition duration-300">Careers</a></li>
               </ul>
             </div>
             <div>
               <h3 className="font-semibold mb-4">Support</h3>
               <ul className="space-y-2 text-gray-400">
-                <li><a href="#" className="hover:text-white transition duration-300">Help Center</a></li>
+                <li><a href="/help" className="hover:text-white transition duration-300">Help Center</a></li>
                 <li><a href="/contact" className="hover:text-white transition duration-300">Contact</a></li>
                 <li><a href="#" className="hover:text-white transition duration-300">Status</a></li>
               </ul>
