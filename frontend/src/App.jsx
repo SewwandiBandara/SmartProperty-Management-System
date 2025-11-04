@@ -11,38 +11,110 @@ import HelpCenter from "./pages/HelpCenter";
 import Blog from "./pages/Blog";
 import Careers from "./pages/Careers";
 import AdminDashboard from "./pages/AdminDashboard";
-import LandlordDashboard from "./pages/LandlordDashboard";
-import TenantDashboard from "./pages/TenantDashboard";
+import LandlordDashboard from "./pages/dashboards/LandlordDashboard";
+import TenantDashboard from "./pages/dashboards/TenantDashboard";
+import AgentDashboard from "./pages/dashboards/AgentDashboard";
+import ManagerDashboard from "./pages/dashboards/ManagerDashboard";
 import PropertyManagement from "./pages/PropertyManagement";
 import PaymentSystem from "./pages/PaymentSystem";
-import MaintenanceRequests from "./pages/MaintenanceRequests";
+//import MaintenanceRequests from "./pages/MaintenanceRequests";
+import ProtectedRoute from "./components/ProtectedRoute";
+import { AuthProvider } from "./context/AuthContext";
 
 
 function App() {
-  
+
   return (
     <BrowserRouter>
-    <Routes>
-        <Route element={<Home/>} path="/"/>
-         {/* Default route for 404 Not Found */}
-        <Route element={<NotFound/>} path="*"/> 
-        {/* pages */}
-        <Route element={<Register/>} path="/register"/>
-        <Route element={<Login/>} path="/login"/>
-        <Route element={<Features/>} path="/features"/>
-        <Route element={<Pricing/>} path="/pricing"/>
-        <Route element={<Contact/>} path="/contact"/>
-        <Route element={<About/>} path="/about"/>
-        <Route element={<HelpCenter/>} path="/help"/>
-        <Route element={<Blog/>} path="/blog"/>
-        <Route element={<Careers/>} path="/careers"/>
-        <Route element={<AdminDashboard/>} path="admin"/>
-        <Route element={<LandlordDashboard/>} path="landlord"/>
-        <Route element={<TenantDashboard/>} path="tenant"/>
-        <Route element={<PropertyManagement/>} path="/property"/>
-        <Route element={<PaymentSystem/>} path="/payment"/>
-        <Route element={<MaintenanceRequests/>} path="/maintenance"/>
-    </Routes>
+      <AuthProvider>
+        <Routes>
+          <Route element={<Home/>} path="/"/>
+
+          {/* Public pages */}
+          <Route element={<Register/>} path="/register"/>
+          <Route element={<Login/>} path="/login"/>
+          <Route element={<Features/>} path="/features"/>
+          <Route element={<Pricing/>} path="/pricing"/>
+          <Route element={<Contact/>} path="/contact"/>
+          <Route element={<About/>} path="/about"/>
+          <Route element={<HelpCenter/>} path="/help"/>
+          <Route element={<Blog/>} path="/blog"/>
+          <Route element={<Careers/>} path="/careers"/>
+
+          {/* Protected Dashboard Routes - Role-based */}
+          <Route
+            path="/dashboard/landlord"
+            element={
+              <ProtectedRoute allowedUserTypes={['landlord']}>
+                <LandlordDashboard/>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/tenant"
+            element={
+              <ProtectedRoute allowedUserTypes={['tenant']}>
+                <TenantDashboard/>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/agent"
+            element={
+              <ProtectedRoute allowedUserTypes={['agent']}>
+                <AgentDashboard/>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/manager"
+            element={
+              <ProtectedRoute allowedUserTypes={['manager']}>
+                <ManagerDashboard/>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Admin Dashboard - Only for manager users */}
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute allowedUserTypes={['manager']}>
+                <AdminDashboard/>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Other protected pages */}
+          <Route
+            path="/property"
+            element={
+              <ProtectedRoute>
+                <PropertyManagement/>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/payment"
+            element={
+              <ProtectedRoute>
+                <PaymentSystem/>
+              </ProtectedRoute>
+            }
+          />
+          {/* <Route
+            path="/maintenance"
+            element={
+              <ProtectedRoute>
+                <MaintenanceRequests/>
+              </ProtectedRoute>
+            }
+          /> */}
+
+          {/* Default route for 404 Not Found */}
+          <Route element={<NotFound/>} path="*"/>
+        </Routes>
+      </AuthProvider>
     </BrowserRouter>
   )
 }

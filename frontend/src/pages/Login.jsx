@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
+import authService from '../services/authService'
+import getDashboardRoute from '../utils/getDashboardRoute'
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -9,6 +11,7 @@ const Login = () => {
   })
   const [rememberMe, setRememberMe] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
   const navigate = useNavigate()
 
   const handleChange = (e) => {
@@ -20,15 +23,27 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    setError('')
     setIsLoading(true)
-    
-    // Simulate API call
-    setTimeout(() => {
-      console.log('Login attempt:', formData)
+
+    try {
+      const response = await authService.login({
+        email: formData.email,
+        password: formData.password
+      })
+
+      if (response.success) {
+        // Redirect to appropriate dashboard based on user type
+        const dashboardRoute = getDashboardRoute(response.user.userType)
+        navigate(dashboardRoute)
+      } else {
+        setError(response.message || 'Login failed. Please try again.')
+      }
+    } catch (err) {
+      setError(err.message || 'Invalid email or password. Please try again.')
+    } finally {
       setIsLoading(false)
-      // Redirect to dashboard on successful login
-      navigate('/dashboard')
-    }, 1500)
+    }
   }
 
   return (
@@ -49,6 +64,12 @@ const Login = () => {
             </div>
 
             <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                  {error}
+                </div>
+              )}
+
               <div className="space-y-4">
                 <div>
                   <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">

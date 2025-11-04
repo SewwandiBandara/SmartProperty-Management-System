@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
+import authService from '../services/authService'
+import getDashboardRoute from '../utils/getDashboardRoute'
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -15,6 +17,7 @@ const Register = () => {
   })
   const [acceptTerms, setAcceptTerms] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
   const navigate = useNavigate()
 
   const handleChange = (e) => {
@@ -26,26 +29,48 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    
+    setError('')
+
     if (formData.password !== formData.confirmPassword) {
-      alert('Passwords do not match!')
+      setError('Passwords do not match!')
       return
     }
 
     if (!acceptTerms) {
-      alert('Please accept the terms and conditions')
+      setError('Please accept the terms and conditions')
+      return
+    }
+
+    if (formData.password.length < 8) {
+      setError('Password must be at least 8 characters long')
       return
     }
 
     setIsLoading(true)
-    
-    // Simulate API call
-    setTimeout(() => {
-      console.log('Registration attempt:', formData)
+
+    try {
+      const response = await authService.register({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        password: formData.password,
+        userType: formData.userType,
+        company: formData.company,
+        phone: formData.phone
+      })
+
+      if (response.success) {
+        // Redirect to appropriate dashboard based on user type
+        const dashboardRoute = getDashboardRoute(response.user.userType)
+        navigate(dashboardRoute)
+      } else {
+        setError(response.message || 'Registration failed. Please try again.')
+      }
+    } catch (err) {
+      setError(err.message || 'An error occurred during registration. Please try again.')
+    } finally {
       setIsLoading(false)
-      // Redirect to dashboard on successful registration
-      navigate('/dashboard')
-    }, 1500)
+    }
   }
 
   return (
@@ -66,6 +91,12 @@ const Register = () => {
             </div>
 
             <form className="space-y-6" onSubmit={handleSubmit}>
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                  {error}
+                </div>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
