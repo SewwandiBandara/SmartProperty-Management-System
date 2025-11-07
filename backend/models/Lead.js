@@ -21,7 +21,7 @@ const leadSchema = new mongoose.Schema({
   // Lead type and status
   leadType: {
     type: String,
-    enum: ['buyer', 'renter', 'seller', 'landlord'],
+    enum: ['renter', 'buyer', 'general_inquiry'],
     required: true
   },
   status: {
@@ -30,11 +30,15 @@ const leadSchema = new mongoose.Schema({
     default: 'new'
   },
 
-  // Agent and property information
-  agent: {
+  // Manager and property information
+  manager: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
+  },
+  customer: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
   },
   interestedProperties: [{
     type: mongoose.Schema.Types.ObjectId,

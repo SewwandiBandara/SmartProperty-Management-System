@@ -244,8 +244,7 @@ router.get('/browse-properties', authenticateToken, async (req, res) => {
 
     const totalProperties = await Property.countDocuments(query);
     const properties = await Property.find(query)
-      .populate('owner', 'firstName lastName email phone')
-      .populate('agent', 'firstName lastName email phone company')
+      .populate('manager', 'firstName lastName email phone')
       .sort(sort)
       .limit(limit * 1)
       .skip((page - 1) * limit);
@@ -280,8 +279,6 @@ router.get('/browse-properties', authenticateToken, async (req, res) => {
 router.get('/property/:id', authenticateToken, async (req, res) => {
   try {
     const property = await Property.findById(req.params.id)
-      .populate('owner', 'firstName lastName email phone company')
-      .populate('agent', 'firstName lastName email phone company')
       .populate('manager', 'firstName lastName email phone');
 
     if (!property) {

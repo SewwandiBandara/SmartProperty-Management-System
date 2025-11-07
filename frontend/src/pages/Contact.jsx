@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import Navbar from '../components/Navbar'
+import contactService from '../services/contactService'
 
 const Contact = () => {
   const [formData, setFormData] = useState({
@@ -12,6 +13,8 @@ const Contact = () => {
     inquiryType: 'general'
   })
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState(false)
 
   const handleChange = (e) => {
     setFormData({
@@ -23,22 +26,49 @@ const Contact = () => {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setIsLoading(true)
-    
-    // Simulate API call
-    setTimeout(() => {
-      console.log('Contact form submission:', formData)
+    setError('')
+    setSuccess(false)
+
+    try {
+      // Get user data if logged in
+      const user = JSON.parse(localStorage.getItem('user') || '{}')
+
+      // Prepare contact data
+      const contactData = {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        subject: `${formData.inquiryType}: ${formData.subject}`,
+        message: formData.message
+      }
+
+      // Add userId if user is authenticated
+      if (user.id) {
+        contactData.userId = user.id
+      }
+
+      const response = await contactService.createContact(contactData)
+
+      if (response.success) {
+        setSuccess(true)
+        setFormData({
+          name: '',
+          email: '',
+          company: '',
+          phone: '',
+          subject: '',
+          message: '',
+          inquiryType: 'general'
+        })
+
+        setTimeout(() => setSuccess(false), 5000)
+      }
+    } catch (err) {
+      console.error('Contact form error:', err)
+      setError(err.response?.data?.message || 'Failed to send message. Please try again.')
+    } finally {
       setIsLoading(false)
-      alert('Thank you for your message! We\'ll get back to you within 24 hours.')
-      setFormData({
-        name: '',
-        email: '',
-        company: '',
-        phone: '',
-        subject: '',
-        message: '',
-        inquiryType: 'general'
-      })
-    }, 1500)
+    }
   }
 
   const contactMethods = [
@@ -135,6 +165,23 @@ const Contact = () => {
             <div className="lg:col-span-2">
               <div className="bg-white rounded-2xl shadow-lg p-8">
                 <h2 className="text-2xl font-bold text-gray-900 mb-6">Send us a message</h2>
+
+                {/* Success Message */}
+                {success && (
+                  <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <p className="text-green-800 font-medium">
+                      Thank you for your message! We'll get back to you within 24 hours.
+                    </p>
+                  </div>
+                )}
+
+                {/* Error Message */}
+                {error && (
+                  <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-red-800 font-medium">{error}</p>
+                  </div>
+                )}
+
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>

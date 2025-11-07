@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import Navbar from '../../components/Navbar'
 import managerService from '../../services/managerService'
+import leadService from '../../services/leadService'
+import leaseService from '../../services/leaseService'
 
 const ManagerDashboard = () => {
   const { user, logout } = useAuth()
@@ -23,6 +25,8 @@ const ManagerDashboard = () => {
   const [userStats, setUserStats] = useState(null)
   const [inquiries, setInquiries] = useState([])
   const [contacts, setContacts] = useState([])
+  const [leads, setLeads] = useState([])
+  const [leases, setLeases] = useState([])
 
   // Modals
   const [showTaskModal, setShowTaskModal] = useState(false)
@@ -30,6 +34,7 @@ const ManagerDashboard = () => {
   const [showPropertyModal, setShowPropertyModal] = useState(false)
   const [showReportModal, setShowReportModal] = useState(false)
   const [showUserModal, setShowUserModal] = useState(false)
+  const [showLeaseModal, setShowLeaseModal] = useState(false)
   const [selectedItem, setSelectedItem] = useState(null)
   const [selectedProperty, setSelectedProperty] = useState(null)
   const [selectedMaintenance, setSelectedMaintenance] = useState(null)
@@ -69,6 +74,17 @@ const ManagerDashboard = () => {
     property: ''
   })
 
+  // Lease form
+  const [leaseForm, setLeaseForm] = useState({
+    property: '',
+    customer: '',
+    startDate: '',
+    endDate: '',
+    monthlyRent: '',
+    securityDeposit: '',
+    terms: ''
+  })
+
   // Report filters
   const [reportFilters, setReportFilters] = useState({
     type: 'performance',
@@ -104,8 +120,20 @@ const ManagerDashboard = () => {
       fetchInquiries()
     } else if (activeTab === 'contacts') {
       fetchContacts()
+    } else if (activeTab === 'leads') {
+      fetchLeads()
+    } else if (activeTab === 'leases') {
+      fetchLeases()
     }
   }, [activeTab, userFilters])
+
+  // Fetch customers when lease modal opens
+  useEffect(() => {
+    if (showLeaseModal && users.length === 0) {
+      fetchUsers()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showLeaseModal])
 
   const fetchDashboardData = async () => {
     try {
@@ -189,6 +217,31 @@ const ManagerDashboard = () => {
     }
   }
 
+  const fetchLeads = async () => {
+    try {
+      const response = await leadService.getLeads()
+      if (response.success) {
+        setLeads(response.leads || [])
+      }
+    } catch (err) {
+      console.error('Error fetching leads:', err)
+      setError('Failed to load leads')
+    }
+  }
+
+  const fetchLeases = async () => {
+    try {
+      const response = await leaseService.getLeases()
+      if (response.success) {
+        setLeases(response.leases || [])
+      }
+    } catch (err) {
+      console.error('Error fetching leases:', err)
+      setError('Failed to load leases')
+    }
+  }
+
+  //note this, this has not used
   const handleAssignMaintenance = async (requestId, assignedTo) => {
     try {
       const response = await managerService.assignMaintenance(requestId, assignedTo)
@@ -595,6 +648,82 @@ const ManagerDashboard = () => {
     }
   }
 
+  // Lead handlers
+  const handleUpdateLeadStatus = async (leadId, status) => {
+    try {
+      const response = await leadService.updateLead(leadId, { status })
+      if (response.success) {
+        setSuccessMessage('Lead status updated successfully!')
+        fetchLeads()
+        setTimeout(() => setSuccessMessage(''), 3000)
+      }
+    } catch (err) {
+      console.error('Error updating lead:', err)
+      setError('Failed to update lead status')
+      setTimeout(() => setError(''), 3000)
+    }
+  }
+
+  // Lease handlers
+  const handleApproveLeaseManager = async (leaseId) => {
+    try {
+      const response = await leaseService.approveLeaseAsManager(leaseId)
+      if (response.success) {
+        setSuccessMessage('Lease approved successfully!')
+        fetchLeases()
+        setTimeout(() => setSuccessMessage(''), 3000)
+      }
+    } catch (err) {
+      console.error('Error approving lease:', err)
+      setError('Failed to approve lease')
+      setTimeout(() => setError(''), 3000)
+    }
+  }
+
+  const handleTerminateLease = async (leaseId) => {
+    if (!window.confirm('Are you sure you want to terminate this lease?')) {
+      return
+    }
+    try {
+      const response = await leaseService.terminateLease(leaseId)
+      if (response.success) {
+        setSuccessMessage('Lease terminated successfully!')
+        fetchLeases()
+        setTimeout(() => setSuccessMessage(''), 3000)
+      }
+    } catch (err) {
+      console.error('Error terminating lease:', err)
+      setError('Failed to terminate lease')
+      setTimeout(() => setError(''), 3000)
+    }
+  }
+
+  const handleCreateLease = async (e) => {
+    e.preventDefault()
+    try {
+      const response = await leaseService.createLease(leaseForm)
+      if (response.success) {
+        setSuccessMessage('Lease created successfully!')
+        setShowLeaseModal(false)
+        setLeaseForm({
+          property: '',
+          customer: '',
+          startDate: '',
+          endDate: '',
+          monthlyRent: '',
+          securityDeposit: '',
+          terms: ''
+        })
+        fetchLeases()
+        setTimeout(() => setSuccessMessage(''), 3000)
+      }
+    } catch (err) {
+      console.error('Error creating lease:', err)
+      setError(err.response?.data?.message || 'Failed to create lease')
+      setTimeout(() => setError(''), 3000)
+    }
+  }
+
   const handleLogout = () => {
     logout()
     navigate('/')
@@ -899,6 +1028,26 @@ const ManagerDashboard = () => {
                 }`}
               >
                 Contacts ({contacts.length})
+              </button>
+              <button
+                onClick={() => setActiveTab('leads')}
+                className={`pb-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'leads'
+                    ? 'border-emerald-600 text-emerald-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Leads ({leads.length})
+              </button>
+              <button
+                onClick={() => setActiveTab('leases')}
+                className={`pb-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'leases'
+                    ? 'border-emerald-600 text-emerald-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Leases ({leases.length})
               </button>
             </div>
           </div>
@@ -1338,6 +1487,190 @@ const ManagerDashboard = () => {
               {contacts.length === 0 && (
                 <div className="text-center py-8 text-gray-500">
                   No contact messages found
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'leads' && (
+          <div className="bg-white rounded-2xl shadow-lg p-8">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">Lead Management</h2>
+            </div>
+
+            {/* Leads Table */}
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact Info</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lead Type</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Interested Properties</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Budget</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {leads.map((lead) => (
+                    <tr key={lead._id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">{lead.name}</div>
+                          <div className="text-sm text-gray-500">{lead.email}</div>
+                          <div className="text-sm text-gray-500">{lead.phone}</div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                          {lead.leadType}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          lead.status === 'new' ? 'bg-blue-100 text-blue-800' :
+                          lead.status === 'contacted' ? 'bg-yellow-100 text-yellow-800' :
+                          lead.status === 'qualified' ? 'bg-purple-100 text-purple-800' :
+                          lead.status === 'converted' ? 'bg-green-100 text-green-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {lead.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-gray-900">
+                          {lead.interestedProperties?.length || 0} properties
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {lead.budget ? `$${lead.budget.min?.toLocaleString()} - $${lead.budget.max?.toLocaleString()}` : 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {formatDate(lead.createdAt)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <select
+                          value={lead.status}
+                          onChange={(e) => handleUpdateLeadStatus(lead._id, e.target.value)}
+                          className="text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        >
+                          <option value="new">New</option>
+                          <option value="contacted">Contacted</option>
+                          <option value="qualified">Qualified</option>
+                          <option value="negotiating">Negotiating</option>
+                          <option value="converted">Converted</option>
+                          <option value="lost">Lost</option>
+                        </select>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {leads.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  No leads found
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'leases' && (
+          <div className="bg-white rounded-2xl shadow-lg p-8">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">Lease Management</h2>
+              <button
+                onClick={() => setShowLeaseModal(true)}
+                className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition"
+              >
+                + Create Lease
+              </button>
+            </div>
+
+            {/* Leases Table */}
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Property</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Start Date</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">End Date</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monthly Rent</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Approvals</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {leases.map((lease) => (
+                    <tr key={lease._id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4">
+                        <div className="text-sm font-medium text-gray-900">{lease.property?.title}</div>
+                        <div className="text-sm text-gray-500">{lease.property?.address}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {lease.customer?.firstName} {lease.customer?.lastName}
+                        </div>
+                        <div className="text-sm text-gray-500">{lease.customer?.email}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {formatDate(lease.startDate)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {formatDate(lease.endDate)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {formatCurrency(lease.monthlyRent)}/mo
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          lease.status === 'active' ? 'bg-green-100 text-green-800' :
+                          lease.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                          lease.status === 'expired' ? 'bg-gray-100 text-gray-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {lease.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2 py-1 rounded text-xs ${lease.approvedByManager ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
+                            Manager: {lease.approvedByManager ? '✓' : '✗'}
+                          </span>
+                          <span className={`px-2 py-1 rounded text-xs ${lease.approvedByCustomer ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
+                            Customer: {lease.approvedByCustomer ? '✓' : '✗'}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        {!lease.approvedByManager && (
+                          <button
+                            onClick={() => handleApproveLeaseManager(lease._id)}
+                            className="text-emerald-600 hover:text-emerald-900 mr-2"
+                          >
+                            Approve
+                          </button>
+                        )}
+                        {lease.status === 'active' && (
+                          <button
+                            onClick={() => handleTerminateLease(lease._id)}
+                            className="text-red-600 hover:text-red-900"
+                          >
+                            Terminate
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {leases.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  No leases found
                 </div>
               )}
             </div>
@@ -2142,6 +2475,163 @@ const ManagerDashboard = () => {
                     className="flex-1 bg-gray-300 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-400 transition duration-200"
                   >
                     Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Create Lease Modal */}
+        {showLeaseModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white">
+                <h3 className="text-2xl font-bold text-gray-900">Create New Lease</h3>
+                <button
+                  onClick={() => setShowLeaseModal(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <form onSubmit={handleCreateLease} className="p-6">
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Property <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={leaseForm.property}
+                      onChange={(e) => setLeaseForm({ ...leaseForm, property: e.target.value })}
+                      required
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    >
+                      <option value="">Select a property</option>
+                      {properties.map((property) => (
+                        <option key={property._id} value={property._id}>
+                          {property.title} - {property.address} (${property.price?.toLocaleString()}/mo)
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Customer <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={leaseForm.customer}
+                      onChange={(e) => setLeaseForm({ ...leaseForm, customer: e.target.value })}
+                      required
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    >
+                      <option value="">Select a customer</option>
+                      {users.filter(u => u.userType === 'customer').map((customer) => (
+                        <option key={customer._id} value={customer._id}>
+                          {customer.firstName} {customer.lastName} - {customer.email}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Start Date <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="date"
+                        value={leaseForm.startDate}
+                        onChange={(e) => setLeaseForm({ ...leaseForm, startDate: e.target.value })}
+                        required
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        End Date <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="date"
+                        value={leaseForm.endDate}
+                        onChange={(e) => setLeaseForm({ ...leaseForm, endDate: e.target.value })}
+                        required
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Monthly Rent <span className="text-red-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-2 text-gray-500">$</span>
+                        <input
+                          type="number"
+                          value={leaseForm.monthlyRent}
+                          onChange={(e) => setLeaseForm({ ...leaseForm, monthlyRent: e.target.value })}
+                          required
+                          min="0"
+                          step="0.01"
+                          className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          placeholder="0.00"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Security Deposit
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-2 text-gray-500">$</span>
+                        <input
+                          type="number"
+                          value={leaseForm.securityDeposit}
+                          onChange={(e) => setLeaseForm({ ...leaseForm, securityDeposit: e.target.value })}
+                          min="0"
+                          step="0.01"
+                          className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          placeholder="0.00"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Lease Terms & Conditions
+                    </label>
+                    <textarea
+                      value={leaseForm.terms}
+                      onChange={(e) => setLeaseForm({ ...leaseForm, terms: e.target.value })}
+                      rows="6"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      placeholder="Enter lease terms, conditions, and any special clauses..."
+                    ></textarea>
+                  </div>
+                </div>
+
+                <div className="mt-6 flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowLeaseModal(false)}
+                    className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition"
+                  >
+                    Create Lease
                   </button>
                 </div>
               </form>

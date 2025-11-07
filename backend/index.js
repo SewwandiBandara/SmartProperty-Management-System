@@ -18,6 +18,8 @@ const maintenanceRoutes = require('./routes/maintenance');
 const contactRoutes = require('./routes/contact');
 const customerRoutes = require('./routes/customer');
 const managerRoutes = require('./routes/manager');
+const leadRoutes = require('./routes/lead');
+const leaseRoutes = require('./routes/lease');
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -26,6 +28,8 @@ app.use('/api/maintenance', maintenanceRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/customer', customerRoutes);
 app.use('/api/manager', managerRoutes);
+app.use('/api/leads', leadRoutes);
+app.use('/api/leases', leaseRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {

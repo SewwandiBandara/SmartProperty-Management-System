@@ -6,12 +6,12 @@ const leaseSchema = new mongoose.Schema({
     ref: 'Property',
     required: true
   },
-  landlord: {
+  manager: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
   },
-  tenant: {
+  customer: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
@@ -48,11 +48,11 @@ const leaseSchema = new mongoose.Schema({
       default: Date.now
     }
   }],
-  approvedByLandlord: {
+  approvedByManager: {
     type: Boolean,
     default: false
   },
-  approvedByTenant: {
+  approvedByCustomer: {
     type: Boolean,
     default: false
   },

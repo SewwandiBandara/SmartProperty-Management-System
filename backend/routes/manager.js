@@ -1227,6 +1227,7 @@ router.patch('/contacts/:id/status', authenticateToken, verifyManager, async (re
 
     res.json({
       success: true,
+      
       message: 'Contact message updated successfully',
       contact
     });
@@ -1270,7 +1271,7 @@ router.get('/alerts', authenticateToken, verifyManager, async (req, res) => {
       status: 'pending'
     })
       .populate('property', 'title')
-      .populate('tenant', 'firstName lastName')
+      .populate('customer', 'firstName lastName')
       .sort({ createdAt: 1 })
       .limit(10);
 
@@ -1279,14 +1280,10 @@ router.get('/alerts', authenticateToken, verifyManager, async (req, res) => {
     futureDate.setDate(futureDate.getDate() + 30);
 
     const upcomingRenewals = await Property.find({
-      $or: [
-        { manager: managerId },
-        { owner: managerId }
-      ],
+      manager: managerId,
       status: 'occupied',
       leaseEndDate: { $lte: futureDate, $gte: new Date() }
     })
-      .populate('currentTenant', 'firstName lastName email')
       .sort({ leaseEndDate: 1 });
 
     // Overdue payments
@@ -1295,7 +1292,7 @@ router.get('/alerts', authenticateToken, verifyManager, async (req, res) => {
       status: 'pending',
       dueDate: { $lt: new Date() }
     })
-      .populate('tenant', 'firstName lastName')
+      .populate('customer', 'firstName lastName')
       .populate('property', 'title')
       .sort({ dueDate: 1 })
       .limit(10);

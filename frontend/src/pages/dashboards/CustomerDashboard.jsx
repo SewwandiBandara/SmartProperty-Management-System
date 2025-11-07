@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import Navbar from '../../components/Navbar'
 import customerService from '../../services/customerService'
+import contactService from '../../services/contactService'
+import leadService from '../../services/leadService'
+import leaseService from '../../services/leaseService'
 
 const CustomerDashboard = () => {
   const { user, logout } = useAuth()
@@ -10,6 +13,9 @@ const CustomerDashboard = () => {
 
   const [properties, setProperties] = useState([])
   const [favorites, setFavorites] = useState([])
+  const [contacts, setContacts] = useState([])
+  const [leads, setLeads] = useState([])
+  const [leases, setLeases] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
@@ -36,6 +42,9 @@ const CustomerDashboard = () => {
   useEffect(() => {
     fetchProperties()
     fetchFavorites()
+    fetchContacts()
+    fetchLeads()
+    fetchLeases()
   }, [])
 
   const fetchProperties = async () => {
@@ -72,6 +81,47 @@ const CustomerDashboard = () => {
       }
     } catch (err) {
       console.error('Error fetching favorites:', err)
+    }
+  }
+
+  const fetchContacts = async () => {
+    try {
+      const response = await contactService.getAllContacts()
+      if (response.success) {
+        // Filter to show only user's own contacts
+        const userContacts = response.contacts.filter(
+          contact => contact.user?._id === user?.id || contact.email === user?.email
+        )
+        setContacts(userContacts || [])
+      }
+    } catch (err) {
+      console.error('Error fetching contacts:', err)
+    }
+  }
+
+  const fetchLeads = async () => {
+    try {
+      const response = await leadService.getLeads()
+      if (response.success) {
+        // Filter to show only user's own leads
+        const userLeads = response.leads.filter(
+          lead => lead.customer?._id === user?.id || lead.email === user?.email
+        )
+        setLeads(userLeads || [])
+      }
+    } catch (err) {
+      console.error('Error fetching leads:', err)
+    }
+  }
+
+  const fetchLeases = async () => {
+    try {
+      const response = await leaseService.getLeases()
+      if (response.success) {
+        setLeases(response.leases || [])
+      }
+    } catch (err) {
+      console.error('Error fetching leases:', err)
     }
   }
 
@@ -149,6 +199,21 @@ const CustomerDashboard = () => {
     setBedrooms('')
     setLocation('')
     fetchProperties()
+  }
+
+  const handleApproveLease = async (leaseId) => {
+    try {
+      const response = await leaseService.approveLeaseAsCustomer(leaseId)
+      if (response.success) {
+        setSuccessMessage('Lease approved successfully!')
+        fetchLeases()
+        setTimeout(() => setSuccessMessage(''), 3000)
+      }
+    } catch (err) {
+      console.error('Error approving lease:', err)
+      setError('Failed to approve lease')
+      setTimeout(() => setError(''), 3000)
+    }
   }
 
   const handleLogout = () => {
@@ -306,6 +371,192 @@ const CustomerDashboard = () => {
               </button>
             </div>
           </div>
+
+          {/* Contact History */}
+          {contacts.length > 0 && (
+            <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
+              <h2 className="text-xl font-bold text-gray-900 mb-4">My Contact Messages</h2>
+              <div className="space-y-4">
+                {contacts.slice(0, 3).map((contact) => (
+                  <div key={contact._id} className="border border-gray-200 rounded-lg p-4 hover:border-emerald-500 transition duration-200">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-gray-900">{contact.subject}</h3>
+                        <p className="text-sm text-gray-600 mt-1">{contact.message.substring(0, 100)}{contact.message.length > 100 ? '...' : ''}</p>
+                      </div>
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                        contact.status === 'new' ? 'bg-blue-100 text-blue-800' :
+                        contact.status === 'in_progress' ? 'bg-yellow-100 text-yellow-800' :
+                        contact.status === 'resolved' ? 'bg-green-100 text-green-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {contact.status.replace('_', ' ').toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-gray-500 mt-2">
+                      <span>Sent: {new Date(contact.createdAt).toLocaleDateString()}</span>
+                      {contact.priority && (
+                        <span className={`font-medium ${
+                          contact.priority === 'urgent' ? 'text-red-600' :
+                          contact.priority === 'high' ? 'text-orange-600' :
+                          contact.priority === 'medium' ? 'text-yellow-600' :
+                          'text-gray-600'
+                        }`}>
+                          Priority: {contact.priority.toUpperCase()}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {contacts.length > 3 && (
+                <div className="mt-4 text-center">
+                  <button
+                    onClick={() => navigate('/contact')}
+                    className="text-emerald-600 hover:text-emerald-700 font-medium text-sm"
+                  >
+                    View all {contacts.length} messages →
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* My Property Inquiries/Leads */}
+          {leads.length > 0 && (
+            <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
+              <h2 className="text-xl font-bold text-gray-900 mb-4">My Property Inquiries</h2>
+              <div className="space-y-4">
+                {leads.slice(0, 3).map((lead) => (
+                  <div key={lead._id} className="border border-gray-200 rounded-lg p-4 hover:border-emerald-500 transition duration-200">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold text-gray-900">{lead.leadType.replace('_', ' ').toUpperCase()} Inquiry</h3>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            lead.status === 'new' ? 'bg-blue-100 text-blue-800' :
+                            lead.status === 'contacted' ? 'bg-yellow-100 text-yellow-800' :
+                            lead.status === 'qualified' ? 'bg-purple-100 text-purple-800' :
+                            lead.status === 'converted' ? 'bg-green-100 text-green-800' :
+                            'bg-red-100 text-red-800'
+                          }`}>
+                            {lead.status.toUpperCase()}
+                          </span>
+                        </div>
+                        {lead.interestedProperties && lead.interestedProperties.length > 0 && (
+                          <p className="text-sm text-gray-600 mt-1">
+                            Interested in {lead.interestedProperties.length} {lead.interestedProperties.length === 1 ? 'property' : 'properties'}
+                          </p>
+                        )}
+                        {lead.budget && (
+                          <p className="text-sm text-gray-600 mt-1">
+                            Budget: ${lead.budget.min?.toLocaleString()} - ${lead.budget.max?.toLocaleString()}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-xs text-gray-500 mt-2">
+                      <span>Submitted: {new Date(lead.createdAt).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {leads.length > 3 && (
+                <div className="mt-4 text-center">
+                  <span className="text-emerald-600 font-medium text-sm">
+                    Total {leads.length} inquiries
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* My Leases */}
+          {leases.length > 0 && (
+            <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
+              <h2 className="text-xl font-bold text-gray-900 mb-4">My Leases</h2>
+              <div className="space-y-4">
+                {leases.map((lease) => (
+                  <div key={lease._id} className="border border-gray-200 rounded-lg p-4 hover:border-emerald-500 transition duration-200">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="font-semibold text-gray-900">{lease.property?.title}</h3>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            lease.status === 'active' ? 'bg-green-100 text-green-800' :
+                            lease.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                            lease.status === 'expired' ? 'bg-gray-100 text-gray-800' :
+                            'bg-red-100 text-red-800'
+                          }`}>
+                            {lease.status.toUpperCase()}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-600">{lease.property?.address}</p>
+                        {lease.manager && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            Property Manager: {lease.manager?.firstName} {lease.manager?.lastName}
+                            {lease.manager?.phone && ` • ${lease.manager.phone}`}
+                          </p>
+                        )}
+                        <div className="grid grid-cols-2 gap-2 mt-2 text-sm">
+                          <div>
+                            <span className="text-gray-500">Start Date:</span>{' '}
+                            <span className="text-gray-900">{new Date(lease.startDate).toLocaleDateString()}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">End Date:</span>{' '}
+                            <span className="text-gray-900">{new Date(lease.endDate).toLocaleDateString()}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Monthly Rent:</span>{' '}
+                            <span className="text-gray-900 font-semibold">${lease.monthlyRent?.toLocaleString()}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Security Deposit:</span>{' '}
+                            <span className="text-gray-900">${lease.securityDeposit?.toLocaleString()}</span>
+                          </div>
+                        </div>
+                        {lease.terms && (
+                          <div className="mt-2 p-2 bg-gray-50 rounded text-xs">
+                            <span className="font-semibold text-gray-700">Lease Terms:</span>
+                            <p className="text-gray-600 mt-1 whitespace-pre-wrap">{lease.terms}</p>
+                          </div>
+                        )}
+                        <div className="mt-3">
+                          <div className="flex items-center gap-2">
+                            <span className={`px-2 py-1 rounded text-xs ${lease.approvedByManager ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
+                              Manager Approval: {lease.approvedByManager ? '✓' : 'Pending'}
+                            </span>
+                            <span className={`px-2 py-1 rounded text-xs ${lease.approvedByCustomer ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
+                              Your Approval: {lease.approvedByCustomer ? '✓' : 'Pending'}
+                            </span>
+                          </div>
+                          {lease.signedAt && (
+                            <p className="text-xs text-gray-500 mt-1">
+                              Lease signed on: {new Date(lease.signedAt).toLocaleDateString()}
+                            </p>
+                          )}
+                        </div>
+                        {!lease.approvedByCustomer && lease.status === 'pending' && (
+                          <div className="mt-3">
+                            <button
+                              onClick={() => handleApproveLease(lease._id)}
+                              className="px-4 py-2 bg-emerald-600 text-white text-sm rounded-lg hover:bg-emerald-700 transition"
+                            >
+                              Approve Lease
+                            </button>
+                            <p className="text-xs text-gray-500 mt-1">
+                              By clicking approve, you agree to the lease terms and conditions above.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Property Browser Section */}
