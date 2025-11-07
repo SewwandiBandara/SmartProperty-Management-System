@@ -10,16 +10,14 @@ import About from "./pages/About";
 import HelpCenter from "./pages/HelpCenter";
 import Blog from "./pages/Blog";
 import Careers from "./pages/Careers";
-import AdminDashboard from "./pages/AdminDashboard";
-import LandlordDashboard from "./pages/dashboards/LandlordDashboard";
-import TenantDashboard from "./pages/dashboards/TenantDashboard";
-import AgentDashboard from "./pages/dashboards/AgentDashboard";
 import ManagerDashboard from "./pages/dashboards/ManagerDashboard";
+import CustomerDashboard from "./pages/dashboards/CustomerDashboard";
 import PropertyManagement from "./pages/PropertyManagement";
 import PaymentSystem from "./pages/PaymentSystem";
-//import MaintenanceRequests from "./pages/MaintenanceRequests";
+import MaintenanceRequests from "./pages/MaintenanceRequests";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
+
 
 
 function App() {
@@ -43,26 +41,10 @@ function App() {
 
           {/* Protected Dashboard Routes - Role-based */}
           <Route
-            path="/dashboard/landlord"
+            path="/dashboard/customer"
             element={
-              <ProtectedRoute allowedUserTypes={['landlord']}>
-                <LandlordDashboard/>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/dashboard/tenant"
-            element={
-              <ProtectedRoute allowedUserTypes={['tenant']}>
-                <TenantDashboard/>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/dashboard/agent"
-            element={
-              <ProtectedRoute allowedUserTypes={['agent']}>
-                <AgentDashboard/>
+              <ProtectedRoute allowedUserTypes={['customer']}>
+                <CustomerDashboard/>
               </ProtectedRoute>
             }
           />
@@ -71,16 +53,6 @@ function App() {
             element={
               <ProtectedRoute allowedUserTypes={['manager']}>
                 <ManagerDashboard/>
-              </ProtectedRoute>
-            }
-          />
-
-          {/* Admin Dashboard - Only for manager users */}
-          <Route
-            path="/admin"
-            element={
-              <ProtectedRoute allowedUserTypes={['manager']}>
-                <AdminDashboard/>
               </ProtectedRoute>
             }
           />
@@ -102,14 +74,14 @@ function App() {
               </ProtectedRoute>
             }
           />
-          {/* <Route
+          <Route
             path="/maintenance"
             element={
               <ProtectedRoute>
                 <MaintenanceRequests/>
               </ProtectedRoute>
             }
-          /> */}
+          />
 
           {/* Default route for 404 Not Found */}
           <Route element={<NotFound/>} path="*"/>

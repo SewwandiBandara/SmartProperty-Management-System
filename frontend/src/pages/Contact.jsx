@@ -275,7 +275,7 @@ const Contact = () => {
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
             <a
-              href="#"
+              href="/help"
               className="bg-emerald-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-emerald-700 transition duration-300"
             >
               Visit Help Center

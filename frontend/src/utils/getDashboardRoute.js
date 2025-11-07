@@ -1,13 +1,11 @@
 // Get the appropriate dashboard route based on user type
 export const getDashboardRoute = (userType) => {
   const routes = {
-    landlord: '/dashboard/landlord',
-    tenant: '/dashboard/tenant',
-    agent: '/dashboard/agent',
-    manager: '/admin'
+    customer: '/dashboard/customer',
+    manager: '/dashboard/manager'
   }
 
-  return routes[userType] || '/dashboard/landlord'
+  return routes[userType] || '/dashboard/customer'
 }
 
 export default getDashboardRoute

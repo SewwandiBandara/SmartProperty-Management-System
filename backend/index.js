@@ -13,9 +13,19 @@ app.use(express.json());
 
 // Import routes
 const authRoutes = require('./routes/auth');
+const propertyRoutes = require('./routes/property');
+const maintenanceRoutes = require('./routes/maintenance');
+const contactRoutes = require('./routes/contact');
+const customerRoutes = require('./routes/customer');
+const managerRoutes = require('./routes/manager');
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/properties', propertyRoutes);
+app.use('/api/maintenance', maintenanceRoutes);
+app.use('/api/contact', contactRoutes);
+app.use('/api/customer', customerRoutes);
+app.use('/api/manager', managerRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {

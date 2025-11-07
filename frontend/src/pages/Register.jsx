@@ -1,17 +1,18 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
-import authService from '../services/authService'
+import { useAuth } from '../context/AuthContext'
 import getDashboardRoute from '../utils/getDashboardRoute'
 
 const Register = () => {
+  const { register } = useAuth()
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     email: '',
     password: '',
     confirmPassword: '',
-    userType: 'landlord',
+    userType: 'customer',
     company: '',
     phone: ''
   })
@@ -49,7 +50,7 @@ const Register = () => {
     setIsLoading(true)
 
     try {
-      const response = await authService.register({
+      const response = await register({
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,
@@ -148,23 +149,7 @@ const Register = () => {
                 />
               </div>
 
-              <div>
-                <label htmlFor="userType" className="block text-sm font-medium text-gray-700 mb-1">
-                  I am a
-                </label>
-                <select
-                  id="userType"
-                  name="userType"
-                  value={formData.userType}
-                  onChange={handleChange}
-                  className="appearance-none relative block w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition duration-200"
-                >
-                  <option value="landlord">Property Owner/Landlord</option>
-                  <option value="tenant">Tenant</option>
-                  <option value="agent">Real Estate Agent</option>
-                  <option value="manager">Property Manager</option>
-                </select>
-              </div>
+              <input type="hidden" name="userType" value="customer" />
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>

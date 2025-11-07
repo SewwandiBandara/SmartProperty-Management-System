@@ -23,10 +23,8 @@ const ProtectedRoute = ({ children, allowedUserTypes }) => {
   if (allowedUserTypes && !allowedUserTypes.includes(user.userType)) {
     // Redirect to their own dashboard if they try to access wrong dashboard
     const userDashboards = {
-      landlord: '/dashboard/landlord',
-      tenant: '/dashboard/tenant',
-      agent: '/dashboard/agent',
-      manager: '/admin'
+      manager: '/dashboard/manager',
+      customer: '/dashboard/customer'
     }
     return <Navigate to={userDashboards[user.userType] || '/login'} replace />
   }

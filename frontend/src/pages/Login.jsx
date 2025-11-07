@@ -1,10 +1,11 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
-import authService from '../services/authService'
+import { useAuth } from '../context/AuthContext'
 import getDashboardRoute from '../utils/getDashboardRoute'
 
 const Login = () => {
+  const { login } = useAuth()
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -27,7 +28,7 @@ const Login = () => {
     setIsLoading(true)
 
     try {
-      const response = await authService.login({
+      const response = await login({
         email: formData.email,
         password: formData.password
       })

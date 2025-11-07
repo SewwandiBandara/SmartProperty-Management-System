@@ -27,8 +27,8 @@ const userSchema = new mongoose.Schema({
   },
   userType: {
     type: String,
-    enum: ['landlord', 'tenant', 'agent', 'manager'],
-    default: 'landlord'
+    enum: ['manager', 'customer'],
+    default: 'customer'
   },
   company: {
     type: String,
@@ -38,7 +38,19 @@ const userSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
+  suspended: {
+    type: Boolean,
+    default: false
+  },
+  favoriteProperties: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Property'
+  }],
   createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  updatedAt: {
     type: Date,
     default: Date.now
   }
