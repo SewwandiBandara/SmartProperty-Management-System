@@ -6,6 +6,7 @@ import customerService from '../../services/customerService'
 import contactService from '../../services/contactService'
 import leadService from '../../services/leadService'
 import leaseService from '../../services/leaseService'
+import maintenanceService from '../../services/maintenanceService'
 
 const CustomerDashboard = () => {
   const { user, logout } = useAuth()
@@ -16,6 +17,7 @@ const CustomerDashboard = () => {
   const [contacts, setContacts] = useState([])
   const [leads, setLeads] = useState([])
   const [leases, setLeases] = useState([])
+  const [maintenanceRequests, setMaintenanceRequests] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
@@ -23,7 +25,16 @@ const CustomerDashboard = () => {
   const [selectedProperty, setSelectedProperty] = useState(null)
   const [showPropertyDetails, setShowPropertyDetails] = useState(false)
   const [showInquiryModal, setShowInquiryModal] = useState(false)
+  const [showMaintenanceModal, setShowMaintenanceModal] = useState(false)
   const [similarProperties, setSimilarProperties] = useState([])
+
+  const [maintenanceForm, setMaintenanceForm] = useState({
+    property: '',
+    title: '',
+    description: '',
+    category: 'other',
+    priority: 'medium'
+  })
 
   const [searchTerm, setSearchTerm] = useState('')
   const [filterType, setFilterType] = useState('all')
@@ -45,6 +56,7 @@ const CustomerDashboard = () => {
     fetchContacts()
     fetchLeads()
     fetchLeases()
+    fetchMaintenanceRequests()
   }, [])
 
   const fetchProperties = async () => {
@@ -122,6 +134,21 @@ const CustomerDashboard = () => {
       }
     } catch (err) {
       console.error('Error fetching leases:', err)
+    }
+  }
+
+  const fetchMaintenanceRequests = async () => {
+    try {
+      const response = await maintenanceService.getMaintenanceRequests()
+      if (response.success) {
+        // Filter to show only user's own maintenance requests
+        const userRequests = response.requests.filter(
+          request => request.customer?._id === user?.id
+        )
+        setMaintenanceRequests(userRequests || [])
+      }
+    } catch (err) {
+      console.error('Error fetching maintenance requests:', err)
     }
   }
 
@@ -212,6 +239,31 @@ const CustomerDashboard = () => {
     } catch (err) {
       console.error('Error approving lease:', err)
       setError('Failed to approve lease')
+      setTimeout(() => setError(''), 3000)
+    }
+  }
+
+  const handleCreateMaintenanceRequest = async (e) => {
+    e.preventDefault()
+
+    try {
+      const response = await maintenanceService.createMaintenanceRequest(maintenanceForm)
+      if (response.success) {
+        setSuccessMessage('Maintenance request submitted successfully!')
+        setShowMaintenanceModal(false)
+        setMaintenanceForm({
+          property: '',
+          title: '',
+          description: '',
+          category: 'other',
+          priority: 'medium'
+        })
+        fetchMaintenanceRequests()
+        setTimeout(() => setSuccessMessage(''), 3000)
+      }
+    } catch (err) {
+      console.error('Error creating maintenance request:', err)
+      setError('Failed to submit maintenance request')
       setTimeout(() => setError(''), 3000)
     }
   }
@@ -557,6 +609,68 @@ const CustomerDashboard = () => {
               </div>
             </div>
           )}
+
+          {/* Maintenance Requests */}
+          <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900">My Maintenance Requests</h2>
+              <button
+                onClick={() => setShowMaintenanceModal(true)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-200 font-medium"
+              >
+                + Submit Request
+              </button>
+            </div>
+            {maintenanceRequests.length > 0 ? (
+              <div className="space-y-4">
+                {maintenanceRequests.slice(0, 5).map((request) => (
+                  <div key={request._id} className="border border-gray-200 rounded-lg p-4 hover:border-blue-500 transition duration-200">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="font-semibold text-gray-900">{request.title}</h3>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            request.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                            request.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                            request.status === 'completed' ? 'bg-green-100 text-green-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {request.status.replace('_', ' ').toUpperCase()}
+                          </span>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            request.priority === 'urgent' ? 'bg-red-100 text-red-800' :
+                            request.priority === 'high' ? 'bg-orange-100 text-orange-800' :
+                            request.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {request.priority.toUpperCase()}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-1">{request.property?.title} - {request.property?.address}</p>
+                        <p className="text-sm text-gray-700 mb-2">{request.description}</p>
+                        <div className="flex items-center gap-4 text-xs text-gray-500">
+                          <span>Category: {request.category}</span>
+                          <span>Submitted: {new Date(request.createdAt).toLocaleDateString()}</span>
+                          {request.completedDate && (
+                            <span>Completed: {new Date(request.completedDate).toLocaleDateString()}</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <p>No maintenance requests yet</p>
+                <p className="text-sm mt-2">Click "Submit Request" to create your first maintenance request</p>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Property Browser Section */}
@@ -933,6 +1047,130 @@ const CustomerDashboard = () => {
                   <button
                     type="button"
                     onClick={() => setShowInquiryModal(false)}
+                    className="flex-1 bg-gray-300 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-400 transition duration-200"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Maintenance Request Modal */}
+        {showMaintenanceModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white">
+                <h3 className="text-2xl font-bold text-gray-900">Submit Maintenance Request</h3>
+                <button
+                  onClick={() => setShowMaintenanceModal(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <form onSubmit={handleCreateMaintenanceRequest} className="p-6">
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Property <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={maintenanceForm.property}
+                    onChange={(e) => setMaintenanceForm({ ...maintenanceForm, property: e.target.value })}
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select a property</option>
+                    {leases
+                      .filter(lease => lease.status === 'active')
+                      .map((lease) => (
+                        <option key={lease._id} value={lease.property._id}>
+                          {lease.property.title} - {lease.property.address}
+                        </option>
+                      ))
+                    }
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">Select from your active leased properties</p>
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Issue Title <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={maintenanceForm.title}
+                    onChange={(e) => setMaintenanceForm({ ...maintenanceForm, title: e.target.value })}
+                    required
+                    placeholder="e.g., Leaking faucet in kitchen"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Description <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    value={maintenanceForm.description}
+                    onChange={(e) => setMaintenanceForm({ ...maintenanceForm, description: e.target.value })}
+                    rows="5"
+                    required
+                    placeholder="Please provide detailed information about the issue..."
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  ></textarea>
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Category <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={maintenanceForm.category}
+                    onChange={(e) => setMaintenanceForm({ ...maintenanceForm, category: e.target.value })}
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="plumbing">Plumbing</option>
+                    <option value="electrical">Electrical</option>
+                    <option value="hvac">HVAC</option>
+                    <option value="appliance">Appliance</option>
+                    <option value="structural">Structural</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Priority <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={maintenanceForm.priority}
+                    onChange={(e) => setMaintenanceForm({ ...maintenanceForm, priority: e.target.value })}
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="low">Low - Can wait</option>
+                    <option value="medium">Medium - Regular maintenance</option>
+                    <option value="high">High - Needs attention soon</option>
+                    <option value="urgent">Urgent - Immediate attention required</option>
+                  </select>
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    type="submit"
+                    className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition duration-200"
+                  >
+                    Submit Request
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowMaintenanceModal(false)}
                     className="flex-1 bg-gray-300 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-400 transition duration-200"
                   >
                     Cancel

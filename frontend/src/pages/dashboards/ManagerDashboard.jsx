@@ -5,6 +5,7 @@ import Navbar from '../../components/Navbar'
 import managerService from '../../services/managerService'
 import leadService from '../../services/leadService'
 import leaseService from '../../services/leaseService'
+import maintenanceService from '../../services/maintenanceService'
 
 const ManagerDashboard = () => {
   const { user, logout } = useAuth()
